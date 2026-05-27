@@ -1,17 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { AvatarDisplay } from "@/components/avatar-display";
 
 interface Comment {
   id: string;
   content: string;
   created_at: string;
-  profiles: { username: string } | null;
+  user_id?: string;
+  profiles: {
+    username: string;
+    avatar_url?: string | null;
+    avatar_config?: unknown;
+  } | null;
 }
 
 export function CommentSection({
@@ -55,17 +61,13 @@ export function CommentSection({
       user_id: user.id,
     };
 
-    // Use post_id for post comments, thread_id for forum comments
-    if (postId) {
-      insertData.post_id = postId;
-    } else if (threadId) {
-      insertData.thread_id = threadId;
-    }
+    if (postId) insertData.post_id = postId;
+    else if (threadId) insertData.thread_id = threadId;
 
     const { data: newComment, error: insertError } = await supabase
       .from("comments")
       .insert(insertData)
-      .select("*, profiles(username)")
+      .select("*, profiles(username, avatar_url, avatar_config)")
       .single();
 
     if (insertError) {
@@ -91,20 +93,31 @@ export function CommentSection({
           {comments.map((c) => (
             <div
               key={c.id}
-              className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/5"
+              className="flex gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/5"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <Circle className="size-4 text-zinc-300" />
-                <span className="text-sm font-medium text-zinc-700">
-                  {c.profiles?.username ?? "未知用户"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(c.created_at).toLocaleString("zh-CN")}
-                </span>
+              <Link href={`/users/${c.user_id ?? ""}`} className="shrink-0">
+                <AvatarDisplay
+                  avatarConfig={c.profiles?.avatar_config}
+                  avatarUrl={c.profiles?.avatar_url}
+                  size="sm"
+                />
+              </Link>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Link
+                    href={`/users/${c.user_id ?? ""}`}
+                    className="text-sm font-medium text-zinc-700 hover:text-[#2D5A27] transition-colors"
+                  >
+                    {c.profiles?.username ?? "未知用户"}
+                  </Link>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(c.created_at).toLocaleString("zh-CN")}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {c.content}
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {c.content}
-              </p>
             </div>
           ))}
         </div>

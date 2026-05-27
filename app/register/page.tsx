@@ -212,7 +212,6 @@ export default function RegisterPage() {
                     onBlur={() => setTimeout(() => setShowCityList(false), 150)}
                     className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
-                  {selectedCity && !showCityList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedCity}</p>}
                   {showCityList && (
                     <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                       {filteredCities.map((c) => (
@@ -231,7 +230,6 @@ export default function RegisterPage() {
                     disabled={!selectedCity}
                     className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  {selectedDstr && !showDstrList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedDstr}</p>}
                   {showDstrList && selectedCity && (
                     <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                       {filteredDistricts.map((d) => (

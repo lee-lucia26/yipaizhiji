@@ -33,7 +33,7 @@ export default async function PostDetailPage({ params }: PostDetailProps) {
   // Comments
   const { data: comments } = await supabase
     .from("comments")
-    .select("*, profiles(username)")
+    .select("*, profiles(username, avatar_url, avatar_config)")
     .eq("post_id", id)
     .order("created_at", { ascending: true });
 

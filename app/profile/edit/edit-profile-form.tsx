@@ -177,11 +177,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
     setTimeout(() => router.push("/dashboard"), 800);
   };
 
-  const playingTimeDisplay =
-    yearsPlayed > 0 || monthsPlayed > 0
-      ? `${yearsPlayed > 0 ? `${yearsPlayed}年` : ""}${monthsPlayed > 0 ? `${monthsPlayed}个月` : ""}`
-      : "未设置";
-
   return (
     <Card>
       <CardContent>
@@ -265,7 +260,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
                   onBlur={() => setTimeout(() => setShowCityList(false), 150)}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
-                {selectedCity && !showCityList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedCity}</p>}
                 {showCityList && (
                   <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                     {filteredCities.map((c) => (
@@ -286,7 +280,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
                   disabled={!selectedCity}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {selectedDstr && !showDstrList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedDstr}</p>}
                 {showDstrList && selectedCity && (
                   <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                     {filteredDistricts.map((d) => (
@@ -315,7 +308,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
                 <span className="text-sm text-muted-foreground shrink-0">个月</span>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">当前：{playingTimeDisplay}</p>
           </div>
 
           <div className="flex flex-col gap-2">
