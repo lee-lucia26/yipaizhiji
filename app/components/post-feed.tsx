@@ -26,6 +26,7 @@ interface Post {
   play_time: string;
   location: string;
   created_at: string;
+  user_id?: string;
   profiles: { username: string; avatar_config: unknown; avatar_url: string | null } | null;
   participants: { user_id: string }[];
 }
