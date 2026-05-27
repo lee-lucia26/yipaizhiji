@@ -103,7 +103,7 @@ export default async function Home() {
           </Link>
         </div>
 
-        <PostFeed posts={postList} regions={regions} userProfile={userProfile} />
+        <PostFeed posts={postList} regions={regions} userProfile={userProfile} currentUserId={user?.id} />
       </div>
     </div>
   );

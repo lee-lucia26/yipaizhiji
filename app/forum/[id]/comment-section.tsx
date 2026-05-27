@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic } from "react";
+import { useState } from "react";
 import { Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -16,10 +16,12 @@ interface Comment {
 
 export function CommentSection({
   threadId,
+  postId,
   comments: initialComments,
   isLoggedIn,
 }: {
-  threadId: string;
+  threadId?: string;
+  postId?: string;
   comments: Comment[];
   isLoggedIn: boolean;
 }) {
@@ -48,13 +50,21 @@ export function CommentSection({
       return;
     }
 
+    const insertData: Record<string, any> = {
+      content: text.trim(),
+      user_id: user.id,
+    };
+
+    // Use post_id for post comments, thread_id for forum comments
+    if (postId) {
+      insertData.post_id = postId;
+    } else if (threadId) {
+      insertData.thread_id = threadId;
+    }
+
     const { data: newComment, error: insertError } = await supabase
       .from("comments")
-      .insert({
-        thread_id: threadId,
-        content: text.trim(),
-        user_id: user.id,
-      })
+      .insert(insertData)
       .select("*, profiles(username)")
       .single();
 
@@ -72,7 +82,6 @@ export function CommentSection({
 
   return (
     <div>
-      {/* 评论列表 */}
       {comments.length === 0 ? (
         <div className="py-12 text-center text-sm text-muted-foreground">
           暂无评论，来做第一个回复的人吧
@@ -101,7 +110,6 @@ export function CommentSection({
         </div>
       )}
 
-      {/* 评论输入框 */}
       {isLoggedIn ? (
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
           <textarea

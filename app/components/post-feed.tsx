@@ -70,10 +70,12 @@ export function PostFeed({
   posts,
   regions,
   userProfile,
+  currentUserId,
 }: {
   posts: Post[];
   regions: string[];
   userProfile: { tennis_level: string; region: string } | null;
+  currentUserId?: string;
 }) {
   const [regionFilter, setRegionFilter] = useState("");
   const [levelRange, setLevelRange] = useState("");
@@ -210,11 +212,17 @@ export function PostFeed({
                     <div className="flex items-center justify-between border-t pt-3">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="size-3.5" />
-                        <span>{participantCount}/{maxP}人</span>
+                        <span>{participantCount || 1}/{maxP}人</span>
                       </div>
-                      <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white">
-                        加入
-                      </span>
+                      {currentUserId && post.user_id === currentUserId ? (
+                        <span className="rounded-full bg-[#DFFF4F]/50 px-3 py-1 text-xs font-medium text-zinc-700">
+                          你发起的
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white">
+                          加入
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

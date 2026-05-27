@@ -13,6 +13,7 @@ export async function GET() {
     });
 
     const json = await res.json();
+    console.log("AMap IP API raw response:", JSON.stringify(json));
 
     if (json.status !== "1") {
       console.error("AMap IP API error:", json);

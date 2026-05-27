@@ -34,7 +34,7 @@ export default async function PostDetailPage({ params }: PostDetailProps) {
   const { data: comments } = await supabase
     .from("comments")
     .select("*, profiles(username)")
-    .eq("thread_id", id)
+    .eq("post_id", id)
     .order("created_at", { ascending: true });
 
   const {
@@ -115,7 +115,7 @@ export default async function PostDetailPage({ params }: PostDetailProps) {
             评论 {comments && comments.length > 0 ? `(${comments.length})` : ""}
           </h2>
           <CommentSection
-            threadId={id}
+            postId={id}
             comments={(comments ?? []) as unknown as { id: string; content: string; created_at: string; profiles: { username: string } | null }[]}
             isLoggedIn={!!user}
           />

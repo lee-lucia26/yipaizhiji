@@ -111,19 +111,33 @@ export function NewPostForm({
     if (tags.length > 0) content += `\n【标签】${tags.join("、")}`;
     if (data.courtFee) content += `\n【场地费】人均 ¥${data.courtFee} 元`;
 
-    const { error } = await supabase.from("posts").insert({
-      title: data.title,
-      content: content || "暂无补充说明",
-      region: data.city,
-      min_level: minLevel,
-      max_level: maxLevel,
-      play_time: `${data.date}T${data.timeSlot}:00`,
-      location: data.location,
-      user_id: user.id,
-      max_participants: data.maxParticipants ? parseInt(data.maxParticipants) : 4,
-    });
+    const { data: newPost, error } = await supabase
+      .from("posts")
+      .insert({
+        title: data.title,
+        content: content || "暂无补充说明",
+        region: data.city,
+        min_level: minLevel,
+        max_level: maxLevel,
+        play_time: `${data.date}T${data.timeSlot}:00`,
+        location: data.location,
+        user_id: user.id,
+        max_participants: data.maxParticipants ? parseInt(data.maxParticipants) : 4,
+      })
+      .select("id")
+      .single();
 
     if (error) { setServerError(error.message); return; }
+
+    // Auto-join: creator is the first participant
+    if (newPost) {
+      await supabase.from("post_participants").insert({
+        post_id: newPost.id,
+        user_id: user.id,
+        status: "joined",
+      });
+    }
+
     router.push("/");
   };
 
