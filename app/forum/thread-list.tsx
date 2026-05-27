@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Circle, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AvatarDisplay } from "@/components/avatar-display";
 
 const categoryLabels = ["全部", "技术交流", "装备推荐", "赛事讨论", "找球友"];
 
@@ -22,7 +23,7 @@ interface Thread {
   category: string;
   user_id: string;
   created_at: string;
-  profiles: { username: string } | null;
+  profiles: { username: string; avatar_url: string | null; avatar_config: unknown } | null;
 }
 
 export function ThreadList({ threads, isLoggedIn }: { threads: Thread[]; isLoggedIn: boolean }) {
@@ -49,7 +50,6 @@ export function ThreadList({ threads, isLoggedIn }: { threads: Thread[]; isLogge
 
   return (
     <div>
-      {/* 分类标签 + 按钮 */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {categoryLabels.map((cat) => (
@@ -73,12 +73,9 @@ export function ThreadList({ threads, isLoggedIn }: { threads: Thread[]; isLogge
         )}
       </div>
 
-      {/* 帖子列表 */}
       <div className="flex flex-col gap-3">
         {filtered.length === 0 ? (
-          <div className="py-20 text-center text-sm text-muted-foreground">
-            该分类暂无讨论帖
-          </div>
+          <div className="py-20 text-center text-sm text-muted-foreground">该分类暂无讨论帖</div>
         ) : (
           filtered.map((thread) => {
             const color = categoryColors[thread.category] ?? { bg: "#2D5A27", text: "#ffffff" };
@@ -86,26 +83,28 @@ export function ThreadList({ threads, isLoggedIn }: { threads: Thread[]; isLogge
               <Link key={thread.id} href={`/forum/${thread.id}`}>
                 <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <CardContent className="flex items-center justify-between py-4">
-                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="truncate text-base font-medium text-zinc-900">
-                          {thread.title}
-                        </h3>
-                        <span
-                          className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                          style={{ backgroundColor: color.bg, color: color.text }}
-                        >
-                          {thread.category}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Circle className="size-3" />
-                          {thread.profiles?.username ?? "未知用户"}
-                        </span>
-                        <span>
-                          {new Date(thread.created_at).toLocaleDateString("zh-CN")}
-                        </span>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <AvatarDisplay
+                        avatarConfig={thread.profiles?.avatar_config}
+                        avatarUrl={thread.profiles?.avatar_url}
+                        size="sm"
+                      />
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate text-base font-medium text-zinc-900">
+                            {thread.title}
+                          </h3>
+                          <span
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                            style={{ backgroundColor: color.bg, color: color.text }}
+                          >
+                            {thread.category}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{thread.profiles?.username ?? "未知用户"}</span>
+                          <span>{new Date(thread.created_at).toLocaleDateString("zh-CN")}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-1 shrink-0 text-xs text-muted-foreground">

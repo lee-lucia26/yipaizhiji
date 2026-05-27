@@ -12,7 +12,7 @@ interface Thread {
   category: string;
   user_id: string;
   created_at: string;
-  profiles: { username: string } | null;
+  profiles: { username: string; avatar_url: string | null; avatar_config: unknown } | null;
 }
 
 interface Match {

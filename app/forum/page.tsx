@@ -8,7 +8,7 @@ interface Thread {
   category: string;
   user_id: string;
   created_at: string;
-  profiles: { username: string } | null;
+  profiles: { username: string; avatar_url: string | null; avatar_config: unknown } | null;
 }
 
 interface Match {
@@ -27,7 +27,7 @@ export default async function ForumPage() {
 
   const { data: threads } = await supabase
     .from("threads")
-    .select("*, profiles(username)")
+    .select("*, profiles(username, avatar_url, avatar_config)")
     .order("created_at", { ascending: false });
 
   const { data: matches } = await supabase
