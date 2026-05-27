@@ -9,10 +9,12 @@ export function JoinButton({
   postId,
   isJoined,
   isLoggedIn,
+  isOwner,
 }: {
   postId: string;
   isJoined: boolean;
   isLoggedIn: boolean;
+  isOwner: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,17 @@ export function JoinButton({
       <Button asChild size="sm" variant="outline">
         <a href="/login">登录后加入</a>
       </Button>
+    );
+  }
+
+  if (isOwner) {
+    return (
+      <span
+        className="inline-block rounded-full px-3 py-1 text-xs font-medium"
+        style={{ backgroundColor: "#DFFF4F", color: "#1a1a1a" }}
+      >
+        你发起的
+      </span>
     );
   }
 
@@ -40,7 +53,6 @@ export function JoinButton({
     }
 
     if (joined) {
-      // Leave
       await supabase
         .from("post_participants")
         .delete()
@@ -48,7 +60,6 @@ export function JoinButton({
         .eq("user_id", user.id);
       setJoined(false);
     } else {
-      // Join
       await supabase.from("post_participants").insert({
         post_id: postId,
         user_id: user.id,

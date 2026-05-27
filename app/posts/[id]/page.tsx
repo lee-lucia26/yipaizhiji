@@ -104,7 +104,7 @@ export default async function PostDetailPage({ params }: PostDetailProps) {
                   {(participants ?? []).length} 人已加入
                 </span>
               </div>
-              <JoinButton postId={id} isJoined={isJoined} isLoggedIn={!!user} />
+              <JoinButton postId={id} isJoined={isJoined} isLoggedIn={!!user} isOwner={user?.id === post.user_id} />
             </div>
           </CardContent>
         </Card>
