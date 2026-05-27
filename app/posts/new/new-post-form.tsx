@@ -48,6 +48,7 @@ const postSchema = z
     timeSlot: z.string().min(1, "请选择时段"),
     levelRange: z.string().min(1, "请选择等级范围"),
     courtFee: z.string().optional().or(z.literal("")),
+    maxParticipants: z.string().optional().or(z.literal("")),
   })
   .refine((data) => {
     if (!data.date) return true;
@@ -119,6 +120,7 @@ export function NewPostForm({
       play_time: `${data.date}T${data.timeSlot}:00`,
       location: data.location,
       user_id: user.id,
+      max_participants: data.maxParticipants ? parseInt(data.maxParticipants) : 4,
     });
 
     if (error) { setServerError(error.message); return; }
@@ -252,8 +254,18 @@ export function NewPostForm({
             </div>
           </div>
 
-          {/* 场地费 + 补充说明 */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* 人数 + 场地费 */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="maxParticipants">需要几人</Label>
+              <select
+                id="maxParticipants"
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                {...register("maxParticipants")}
+              >
+                {[2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}人</option>)}
+              </select>
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="courtFee">场地费（人均 ¥）</Label>
               <Input id="courtFee" type="number" min={0} placeholder="50" {...register("courtFee")} />

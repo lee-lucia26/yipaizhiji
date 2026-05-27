@@ -1,29 +1,24 @@
-const AMAP_KEY = process.env.NEXT_PUBLIC_AMAP_KEY;
-
 interface LocateResult {
   city: string;
   district: string;
 }
 
 /**
- * 高德 IP 定位（国内浏览器 geolocation 成功率极低，直接用 IP）
+ * 通过服务端 API Route 代理调用高德 IP 定位（避免浏览器跨域）
+ * GET /api/geolocate → server → AMap API
  */
 export async function autoLocate(): Promise<LocateResult | null> {
-  if (!AMAP_KEY) return null;
-
   try {
-    const res = await fetch(`https://restapi.amap.com/v3/ip?key=${AMAP_KEY}`);
+    const res = await fetch("/api/geolocate");
+    if (!res.ok) return null;
+
     const json = await res.json();
+    if (json.error) return null;
 
-    if (json.status !== "1") return null;
-
-    let city = (json.city || "") as string;
-    if (!city || city === "[]" || city.length === 0) {
-      city = (json.province || "") as string;
-    }
-    city = city.replace(/市$/, "");
-
-    return { city, district: "" };
+    return {
+      city: json.city || "",
+      district: json.district || "",
+    };
   } catch {
     return null;
   }

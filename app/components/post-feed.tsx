@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Users } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Users, MapPin, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AvatarDisplay } from "@/components/avatar-display";
 
@@ -27,7 +27,8 @@ interface Post {
   location: string;
   created_at: string;
   user_id?: string;
-  profiles: { username: string; avatar_config: unknown; avatar_url: string | null } | null;
+  max_participants?: number;
+  profiles: { username: string; avatar_config: unknown; avatar_url: string | null; tennis_level?: string } | null;
   participants: { user_id: string }[];
 }
 
@@ -38,21 +39,29 @@ function calcMatch(post: Post, userProfile: { tennis_level: string; region: stri
 
   let score = 0;
 
-  // Level match (60%)
+  // Level match (40)
   if (post.min_level <= userLevel && userLevel <= post.max_level) {
-    score += 60;
+    score += 40;
   } else {
-    const dist = Math.min(
-      Math.abs(userLevel - post.min_level),
-      Math.abs(userLevel - post.max_level)
-    );
-    score += Math.max(0, 60 - dist * 15);
+    const dist = Math.min(Math.abs(userLevel - post.min_level), Math.abs(userLevel - post.max_level));
+    score += Math.max(0, 40 - dist * 10);
   }
 
-  // Region match (40%)
-  if (userProfile.region && post.region.includes(userProfile.region.split("-")[0])) {
-    score += 40;
+  // Region match (30)
+  if (userProfile.region && post.region.includes(userProfile.region.split("-")[0] ?? "")) {
+    score += 30;
   }
+
+  // Time match (20) — within 7 days
+  const daysUntil = (new Date(post.play_time).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (daysUntil >= 0 && daysUntil <= 7) {
+    score += 20;
+  } else if (daysUntil >= 0 && daysUntil <= 14) {
+    score += 10;
+  }
+
+  // Other (10) — base score
+  score += 10;
 
   return Math.min(100, Math.round(score));
 }
@@ -79,11 +88,6 @@ export function PostFeed({
     return result;
   }, [posts, regionFilter, levelRange]);
 
-  const handleReset = () => {
-    setRegionFilter("");
-    setLevelRange("");
-  };
-
   if (posts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-32 text-center">
@@ -98,33 +102,33 @@ export function PostFeed({
 
   return (
     <div>
-      {/* 筛选栏 */}
+      {/* Filter bar */}
       <div className="mb-6 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-foreground/5">
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-muted-foreground">区域</label>
           <select
             value={regionFilter}
             onChange={(e) => setRegionFilter(e.target.value)}
-            className="h-8 min-w-[160px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 min-w-[140px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="">全部区域</option>
             {regions.map((r) => (<option key={r} value={r}>{r}</option>))}
           </select>
         </div>
-
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">等级范围</label>
+          <label className="text-xs font-medium text-muted-foreground">等级</label>
           <select
             value={levelRange}
             onChange={(e) => setLevelRange(e.target.value)}
-            className="h-8 min-w-[140px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-8 min-w-[130px] rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="">全部等级</option>
             {levelRanges.map((lr) => (<option key={lr.label} value={`${lr.min}-${lr.max}`}>{lr.label}</option>))}
           </select>
         </div>
-
-        <Button variant="outline" size="sm" onClick={handleReset}>重置筛选</Button>
+        <Button variant="outline" size="sm" onClick={() => { setRegionFilter(""); setLevelRange(""); }}>
+          重置
+        </Button>
         <span className="text-xs text-muted-foreground">共 {filtered.length} 条</span>
       </div>
 
@@ -138,67 +142,79 @@ export function PostFeed({
           {filtered.map((post) => {
             const match = calcMatch(post, userProfile);
             const participantCount = post.participants?.length ?? 0;
+            const maxP = post.max_participants ?? 4;
 
             return (
               <Link key={post.id} href={`/posts/${post.id}`}>
                 <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex flex-col gap-1">
-                        {match !== null && (
-                          <span
-                            className="inline-flex items-center gap-1 self-start rounded-full px-2 py-0.5 text-[11px] font-bold"
-                            style={{
-                              backgroundColor: match >= 80 ? "#DFFF4F" : match >= 50 ? "#fef3c7" : "#f3f4f6",
-                              color: "#1a1a1a",
-                            }}
-                          >
-                            {match}% 匹配
-                          </span>
-                        )}
-                        <CardTitle className="text-lg text-zinc-900">{post.title}</CardTitle>
+                  <CardContent className="pt-5">
+                    {/* Match % */}
+                    {match !== null && (
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <AvatarDisplay
+                            avatarConfig={post.profiles?.avatar_config}
+                            avatarUrl={post.profiles?.avatar_url}
+                            size="sm"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-zinc-800">
+                              {post.profiles?.username ?? "未知用户"}
+                            </span>
+                            {post.profiles?.tennis_level && (
+                              <span className="ml-1.5 inline-block rounded-full bg-zinc-100 px-1.5 py-0 text-[11px] text-muted-foreground">
+                                {post.profiles.tennis_level}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-xs font-bold"
+                          style={{
+                            backgroundColor: match >= 80 ? "#DFFF4F" : match >= 50 ? "#fef3c7" : "#f3f4f6",
+                            color: "#1a1a1a",
+                          }}
+                        >
+                          {match}% 匹配
+                        </span>
                       </div>
-                      <span className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium text-white" style={{ backgroundColor: "#2D5A27" }}>
+                    )}
+
+                    {/* Title + region tag */}
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <h3 className="text-base font-semibold text-zinc-900">{post.title}</h3>
+                      <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: "#2D5A27" }}>
                         {post.region}
                       </span>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4 text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                      {post.content}
-                    </p>
 
-                    <div className="mb-4">
-                      <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: "#DFFF4F", color: "#1a1a1a" }}>
-                        适合等级 {post.min_level} - {post.max_level}
+                    {/* Info row */}
+                    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {new Date(post.play_time).toLocaleString("zh-CN", {
+                          month: "numeric", day: "numeric", weekday: "short",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="size-3" />
+                        {post.location}
+                      </span>
+                      <span className="inline-block rounded-full bg-[#DFFF4F]/30 px-1.5 py-0 text-[11px] font-medium text-zinc-700">
+                        {post.min_level}-{post.max_level}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-muted-foreground">约球时间</span>
-                        <span className="font-medium text-zinc-700">
-                          {new Date(post.play_time).toLocaleString("zh-CN", {
-                            month: "numeric", day: "numeric", weekday: "short",
-                            hour: "2-digit", minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-muted-foreground">场地</span>
-                        <span className="font-medium text-zinc-700">{post.location}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between border-t pt-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <AvatarDisplay avatarConfig={post.profiles?.avatar_config} avatarUrl={post.profiles?.avatar_url} size="sm" />
-                        <span>{post.profiles?.username ?? "未知用户"}</span>
-                      </div>
+                    {/* Bottom: participants + join hint */}
+                    <div className="flex items-center justify-between border-t pt-3">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="size-3.5" />
-                        <span>{participantCount} 人已加入</span>
+                        <span>{participantCount}/{maxP}人</span>
                       </div>
+                      <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white">
+                        加入
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
