@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "./user-menu";
 
 export async function Navbar() {
   const supabase = await createClient();
@@ -10,13 +11,17 @@ export async function Navbar() {
   } = await supabase.auth.getUser();
 
   let username = "";
+  let avatarConfig = null;
+  let avatarUrl: string | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, avatar_config, avatar_url")
       .eq("id", user.id)
       .single();
     username = profile?.username ?? "";
+    avatarConfig = profile?.avatar_config ?? null;
+    avatarUrl = profile?.avatar_url ?? null;
   }
 
   return (
@@ -29,18 +34,12 @@ export async function Navbar() {
           一拍知己
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-6">
           <Link
             href="/"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            首页
-          </Link>
-          <Link
-            href="/matches"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            赛事追踪
+            约球广场
           </Link>
           <Link
             href="/forum"
@@ -50,14 +49,7 @@ export async function Navbar() {
           </Link>
 
           {user ? (
-            <>
-              <Button asChild size="sm">
-                <Link href="/posts/new">发布约球帖</Link>
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {username || user.email}
-              </span>
-            </>
+            <UserMenu username={username} avatarConfig={avatarConfig} avatarUrl={avatarUrl} />
           ) : (
             <Button asChild size="sm">
               <Link href="/login">登录 / 注册</Link>
