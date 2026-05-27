@@ -74,9 +74,6 @@ export default async function DashboardPage() {
         <Button asChild variant="outline">
           <Link href="/profile/edit">编辑资料</Link>
         </Button>
-        <Button asChild variant="outline">
-          <Link href="/matches">赛事追踪</Link>
-        </Button>
         <SignOutButton />
       </div>
     </div>
