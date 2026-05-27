@@ -19,6 +19,7 @@ interface Post {
 export default async function Home() {
   const supabase = await createClient();
 
+  // No filters — fetch ALL posts. Columns match DB exactly: region (not city), play_time (not play_date)
   const { data: posts } = await supabase
     .from("posts")
     .select("*, profiles(username, avatar_config, avatar_url), participants:post_participants(user_id)")
@@ -46,7 +47,6 @@ export default async function Home() {
       <div className="mx-auto max-w-3xl">
         <h1 className="mb-6 text-3xl font-bold tracking-tight text-zinc-900">约球广场</h1>
 
-        {/* Action Cards */}
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             href="/posts/new"

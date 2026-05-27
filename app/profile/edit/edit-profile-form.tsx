@@ -44,7 +44,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
   const [locating, setLocating] = useState(false);
 
-  // Parse existing region "北京-朝阳区" → city/dstr
   const regionParts = (profile?.region ?? "").split("-");
   const initialCity = regionParts[0] || "";
   const initialDstr = regionParts[1] || "";
@@ -85,8 +84,8 @@ export function EditProfileForm({ profile }: { profile: any }) {
       username: profile?.username ?? "",
       bio: profile?.bio ?? "",
       tennisLevel: profile?.tennis_level ?? "",
-      yearsPlaying: yearsPlayed || undefined,
-      monthsPlaying: monthsPlayed || undefined,
+      yearsPlaying: yearsPlayed || (0 as any),
+      monthsPlaying: monthsPlayed || (0 as any),
       playFrequency: profile?.play_frequency ?? "",
     },
   });
@@ -112,17 +111,11 @@ export function EditProfileForm({ profile }: { profile: any }) {
 
     const result = await autoLocate();
 
-    if (result) {
-      if (result.city) {
-        setSelectedCity(result.city);
-        setCitySearch("");
-      }
-      if (result.district) {
-        setSelectedDstr(result.district);
-        setDstrSearch("");
-      }
+    if (result && result.city) {
+      setSelectedCity(result.city);
+      setCitySearch("");
       setServerSuccess("定位成功");
-      setTimeout(() => setServerSuccess(""), 3000);
+      setTimeout(() => setServerSuccess(""), 2000);
     } else {
       setServerError("定位失败，请手动选择城市");
     }
@@ -133,31 +126,23 @@ export function EditProfileForm({ profile }: { profile: any }) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     setServerError("");
     const supabase = createClient();
 
     const ext = file.name.split(".").pop();
     const path = `${profile.id}/avatar.${ext}`;
-
     const { error } = await supabase.storage
       .from("avatars")
       .upload(path, file, { upsert: true, contentType: file.type });
 
-    if (error) {
-      setServerError(`上传失败：${error.message}`);
-      setUploading(false);
-      return;
-    }
+    if (error) { setServerError(`上传失败：${error.message}`); setUploading(false); return; }
 
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    const publicUrl = urlData?.publicUrl;
-    if (publicUrl) {
-      setAvatarUrl(publicUrl);
-      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", profile.id);
+    if (urlData?.publicUrl) {
+      setAvatarUrl(urlData.publicUrl);
+      await supabase.from("profiles").update({ avatar_url: urlData.publicUrl }).eq("id", profile.id);
     }
-
     setUploading(false);
   };
 
@@ -166,11 +151,7 @@ export function EditProfileForm({ profile }: { profile: any }) {
     setServerSuccess("");
 
     const region = selectedDstr ? `${selectedCity}-${selectedDstr}` : selectedCity;
-
-    if (!region) {
-      setServerError("请选择城市和区域");
-      return;
-    }
+    if (!region) { setServerError("请选择城市和区域"); return; }
 
     const supabase = createClient();
     const avatar = DEFAULT_AVATARS[selectedAvatar];
@@ -180,19 +161,16 @@ export function EditProfileForm({ profile }: { profile: any }) {
       .update({
         username: data.username,
         bio: data.bio || null,
-        tennis_level: data.tennisLevel,
+        tennis_level: parseFloat(data.tennisLevel),
         region,
-        years_playing: data.yearsPlaying ?? 0,
-        months_playing: data.monthsPlaying ?? 0,
+        years_playing: data.yearsPlaying,
+        months_playing: data.monthsPlaying,
         play_frequency: data.playFrequency || null,
         avatar_config: { imageUrl: avatar.imageUrl },
       })
       .eq("id", profile.id);
 
-    if (error) {
-      setServerError(error.message);
-      return;
-    }
+    if (error) { setServerError(error.message); return; }
 
     setServerSuccess("保存成功！");
     router.refresh();
@@ -208,7 +186,7 @@ export function EditProfileForm({ profile }: { profile: any }) {
     <Card>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 pt-4">
-          {/* Avatar preview + upload */}
+          {/* Avatar */}
           <div className="flex items-center gap-4">
             <AvatarDisplay
               avatarConfig={{ imageUrl: DEFAULT_AVATARS[selectedAvatar].imageUrl }}
@@ -239,33 +217,27 @@ export function EditProfileForm({ profile }: { profile: any }) {
             </div>
           </div>
 
-          {/* Default avatars */}
           <div className="flex flex-col gap-2">
             <Label>默认头像</Label>
             <AvatarSelector selectedIndex={selectedAvatar} onSelect={setSelectedAvatar} />
           </div>
 
-          {/* Username */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="username">昵称</Label>
             <Input id="username" placeholder="你的昵称" {...register("username")} />
             {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
           </div>
 
-          {/* Bio */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="bio">个人简介</Label>
             <textarea
-              id="bio"
-              rows={3}
-              placeholder="介绍一下你的打球风格..."
+              id="bio" rows={3} placeholder="介绍一下你的打球风格..."
               className="w-full rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
               {...register("bio")}
             />
             {errors.bio && <p className="text-sm text-destructive">{errors.bio.message}</p>}
           </div>
 
-          {/* Level */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="tennisLevel">网球等级</Label>
             <select
@@ -293,9 +265,7 @@ export function EditProfileForm({ profile }: { profile: any }) {
                   onBlur={() => setTimeout(() => setShowCityList(false), 150)}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
-                {selectedCity && !showCityList && (
-                  <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedCity}</p>
-                )}
+                {selectedCity && !showCityList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedCity}</p>}
                 {showCityList && (
                   <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                     {filteredCities.map((c) => (
@@ -316,9 +286,7 @@ export function EditProfileForm({ profile }: { profile: any }) {
                   disabled={!selectedCity}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {selectedDstr && !showDstrList && (
-                  <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedDstr}</p>
-                )}
+                {selectedDstr && !showDstrList && <p className="text-xs text-muted-foreground absolute -bottom-4 left-0">{selectedDstr}</p>}
                 {showDstrList && selectedCity && (
                   <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
                     {filteredDistricts.map((d) => (
@@ -335,7 +303,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
             </div>
           </div>
 
-          {/* Playing experience */}
           <div className="flex flex-col gap-2">
             <Label>球龄</Label>
             <div className="grid grid-cols-2 gap-4">
@@ -351,7 +318,6 @@ export function EditProfileForm({ profile }: { profile: any }) {
             <p className="text-xs text-muted-foreground">当前：{playingTimeDisplay}</p>
           </div>
 
-          {/* Play frequency */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="playFrequency">打球频率</Label>
             <select

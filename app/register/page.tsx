@@ -15,10 +15,7 @@ import { autoLocate } from "@/lib/geolocate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card, CardHeader, CardTitle, CardDescription,
-  CardContent, CardFooter,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarDisplay } from "@/components/avatar-display";
 
@@ -48,12 +45,10 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(0);
 
-  // Avatar upload
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // City + district
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedDstr, setSelectedDstr] = useState("");
   const [citySearch, setCitySearch] = useState("");
@@ -73,11 +68,7 @@ export default function RegisterPage() {
     return districts.filter((d) => d.includes(dstrSearch.trim()));
   }, [districts, dstrSearch]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterForm>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
 
@@ -109,17 +100,11 @@ export default function RegisterPage() {
 
     const result = await autoLocate();
 
-    if (result) {
-      if (result.city) {
-        setSelectedCity(result.city);
-        setCitySearch("");
-      }
-      if (result.district) {
-        setSelectedDstr(result.district);
-        setDstrSearch("");
-      }
+    if (result && result.city) {
+      setSelectedCity(result.city);
+      setCitySearch("");
       setSuccessMsg("定位成功");
-      setTimeout(() => setSuccessMsg(""), 3000);
+      setTimeout(() => setSuccessMsg(""), 2000);
     } else {
       setServerError("定位失败，请手动选择城市");
     }
@@ -132,11 +117,7 @@ export default function RegisterPage() {
     setSuccessMsg("");
 
     const region = selectedDstr ? `${selectedCity}-${selectedDstr}` : selectedCity;
-
-    if (!region) {
-      setServerError("请选择城市和区域");
-      return;
-    }
+    if (!region) { setServerError("请选择城市和区域"); return; }
 
     const supabase = createClient();
     const avatar = DEFAULT_AVATARS[selectedAvatar];
@@ -145,26 +126,18 @@ export default function RegisterPage() {
       email: data.email,
       password: data.password,
     });
-
     if (authError) { setServerError(authError.message); return; }
-
-    if (!authData.user) {
-      setSuccessMsg("注册成功！请检查邮箱完成验证后再登录。");
-      return;
-    }
+    if (!authData.user) { setSuccessMsg("注册成功！请检查邮箱完成验证后再登录。"); return; }
 
     const userId = authData.user.id;
     let finalAvatarUrl: string | null = null;
 
-    // Upload avatar if file selected
     if (uploadFile) {
       const ext = uploadFile.name.split(".").pop();
       const path = `${userId}/avatar.${ext}`;
-
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(path, uploadFile, { upsert: true, contentType: uploadFile.type });
-
       if (!uploadError) {
         const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
         finalAvatarUrl = urlData?.publicUrl ?? null;
@@ -174,13 +147,12 @@ export default function RegisterPage() {
     const { error: profileError } = await supabase.from("profiles").insert({
       id: userId,
       username: data.username,
-      tennis_level: data.tennisLevel,
+      tennis_level: parseFloat(data.tennisLevel),
       region,
       avatar_type: finalAvatarUrl ? "upload" : "default",
       avatar_url: finalAvatarUrl,
       avatar_config: { imageUrl: avatar.imageUrl },
     });
-
     if (profileError) { setServerError(`资料创建失败：${profileError.message}`); return; }
 
     router.push("/dashboard");
@@ -200,25 +172,21 @@ export default function RegisterPage() {
               <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...register("email")} />
               {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
-
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">密码</Label>
               <Input id="password" type="password" placeholder="至少 6 位" autoComplete="new-password" {...register("password")} />
               {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
             </div>
-
             <div className="flex flex-col gap-2">
               <Label htmlFor="confirmPassword">确认密码</Label>
               <Input id="confirmPassword" type="password" placeholder="再次输入密码" autoComplete="new-password" {...register("confirmPassword")} />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
-
             <div className="flex flex-col gap-2">
               <Label htmlFor="username">昵称</Label>
               <Input id="username" placeholder="你的昵称" {...register("username")} />
               {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
             </div>
-
             <div className="flex flex-col gap-2">
               <Label htmlFor="tennisLevel">网球等级</Label>
               <select
@@ -232,15 +200,13 @@ export default function RegisterPage() {
               {errors.tennisLevel && <p className="text-sm text-destructive">{errors.tennisLevel.message}</p>}
             </div>
 
-            {/* City + district + locate button in one row */}
+            {/* City + district + locate in one row */}
             <div className="flex flex-col gap-1.5">
               <Label>城市 / 区域</Label>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <input
-                    type="text"
-                    placeholder={selectedCity || "搜索城市"}
-                    value={citySearch}
+                    type="text" placeholder={selectedCity || "搜索城市"} value={citySearch}
                     onChange={(e) => { setCitySearch(e.target.value); setShowCityList(true); }}
                     onFocus={() => setShowCityList(true)}
                     onBlur={() => setTimeout(() => setShowCityList(false), 150)}
@@ -258,9 +224,7 @@ export default function RegisterPage() {
                 </div>
                 <div className="relative flex-1">
                   <input
-                    type="text"
-                    placeholder={selectedDstr || (selectedCity ? "搜索区域" : "请先选城市")}
-                    value={dstrSearch}
+                    type="text" placeholder={selectedDstr || (selectedCity ? "搜索区域" : "请先选城市")} value={dstrSearch}
                     onChange={(e) => { setDstrSearch(e.target.value); setShowDstrList(true); }}
                     onFocus={() => setShowDstrList(true)}
                     onBlur={() => setTimeout(() => setShowDstrList(false), 150)}
@@ -284,7 +248,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Avatar: upload + default selection */}
+            {/* Avatar */}
             <div className="flex flex-col gap-3">
               <Label>头像</Label>
               <div className="flex items-center gap-4">
@@ -298,22 +262,12 @@ export default function RegisterPage() {
                     <Button type="button" variant="outline" size="sm" asChild>
                       <span>上传照片</span>
                     </Button>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
+                    <input ref={fileRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
                   </label>
                   {uploadFile && (
-                    <button
-                      type="button"
+                    <button type="button"
                       onClick={() => { setUploadFile(null); setUploadPreview(null); if (fileRef.current) fileRef.current.value = ""; }}
-                      className="text-xs text-destructive hover:underline text-left"
-                    >
-                      移除照片
-                    </button>
+                      className="text-xs text-destructive hover:underline text-left">移除照片</button>
                   )}
                 </div>
               </div>
@@ -330,8 +284,7 @@ export default function RegisterPage() {
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            已有账号？{" "}
-            <Link href="/login" className="text-primary hover:underline">去登录</Link>
+            已有账号？ <Link href="/login" className="text-primary hover:underline">去登录</Link>
           </p>
         </CardFooter>
       </Card>
